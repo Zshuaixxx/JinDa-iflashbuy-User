@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "lib": ["esnext", "dom"],
+    "types": ["@dcloudio/types", "miniprogram-api-typings"]
+  },
+  "include": ["src/**/*.js", "src/**/*.vue", "pages/**/*.js", "pages/**/*.vue"]
+}
