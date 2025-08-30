@@ -127,8 +127,8 @@ export default {
         }
         .act {
           // background: linear-gradient(144deg, #ffda05 18%, #ffb302 80%);
-          background: #ffc200;
-          border: 1px solid #ffc200;
+          background: #9C27B0;
+          border: 1px solid #9C27B0;
           font-family: PingFangSC, PingFangSC-Medium;
           font-weight: 500;
         }
@@ -180,7 +180,7 @@ export default {
         font-size: 28rpx;
         opacity: 1;
         // background: linear-gradient(144deg, #ffda05 18%, #ffb302 80%);
-        background: #ffc200;
+        background: #9C27B0;
         border-radius: 30rpx;
       }
     }

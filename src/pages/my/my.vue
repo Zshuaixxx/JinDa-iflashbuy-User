@@ -8,7 +8,7 @@
       statusBar="true"
       fixed="true"
       color="#ffffff"
-      backgroundColor="#ffc200"
+      backgroundColor="#9C27B0"
     ></uni-nav-bar>
 
     <view class="my-center">

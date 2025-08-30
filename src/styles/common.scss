@@ -145,7 +145,7 @@
     display: inline-block;
   }
   .btn {
-    background: #ffc200;
+    background: #9C27B0;
   }
 }
 //
@@ -368,8 +368,8 @@
   .wx-checkbox-input-checked,
   .wx-radio-input-checked,
   .wx-switch-input-checked {
-    background-color: #ffc200 !important;
-    border-color: #ffc200 !important;
+    background-color: #9C27B0 !important;
+    border-color: #9C27B0 !important;
     color: #000 !important;
     transform: scale(0.7);
   }
@@ -383,8 +383,8 @@ radio .wx-radio-input.wx-radio-input-checked::before {
   font-size: 40rpx; /* 对勾大小 30rpx */
   font-weight: 600;
   color: #000; /* 对勾颜色 白色 */
-  border: 1rpx solid #ffc200;
-  background: #ffc200;
+  border: 1rpx solid #9C27B0;
+  background: #9C27B0;
   // transform:scale(1);
   // -webkit-transform:translate(-50%, -50%) scale(1);
 }

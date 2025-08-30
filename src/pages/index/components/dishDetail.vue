@@ -217,7 +217,7 @@ export default {
         font-weight: 500;
         font-size: 28rpx;
         opacity: 1;
-        background: #ffc200;
+        background: #9C27B0;
         border-radius: 30rpx;
       }
     }

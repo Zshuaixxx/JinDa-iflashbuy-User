@@ -115,7 +115,7 @@ export default {
       font-size: 32rpx;
       color: #666666;
       .word_date {
-        color: #ffc200;
+        color: #9C27B0;
       }
     }
 
@@ -132,7 +132,7 @@ export default {
         height: 72rpx;
         line-height: 72rpx;
         margin-top: 20rpx;
-        background: #ffc200;
+        background: #9C27B0;
         border-radius: 8rpx;
         & + .go_dish {
           margin-left: 40rpx;

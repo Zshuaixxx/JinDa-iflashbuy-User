@@ -26,6 +26,7 @@ import {
 	getMerchantInfo,
 } from "../api/api.js"
 import { baseUrl } from "../../utils/env"
+import { useMainStore } from "../../store/index"
 export default {
 	data() {
 		return {
@@ -131,6 +132,8 @@ export default {
 		this.getMenuItemTop()
 	},
 	onLoad(options) {
+		// 从Pinia获取store
+		this.store = useMainStore()
 		uni.onNetworkStatusChange(function (res) {
 			if (res.isConnected == false) {
 				uni.navigateTo({
@@ -145,7 +148,8 @@ export default {
 		}
 	},
 	onShow() {
-		this.initStore()
+		// 从Pinia获取store
+		this.store = useMainStore()
 		if (this.store.token) {
 			this.init()
 		}
@@ -206,7 +210,7 @@ export default {
 			// 获取店铺状态
 			this.getShopInfo()
 			this.selectHeight = res.height
-			if (this.token() === "") {
+			if (this.store.token === "") {
 				uni.showModal({
 					title: "温馨提示",
 					content: "亲，授权微信登录后才能点餐！",
@@ -232,21 +236,44 @@ export default {
 										// 传递地理位置信息
 									}
 									// 获取定位信息
-									uni.getLocation({
-										type: 'gcj02', isHighAccuracy: true
-									}).then(([err, result]) => {
-										if (err) {
-											uni.showToast({
-												title: "获取地理位置失败",
-												icon: "none"
-											})
-										} else {
-											if (process.env.NODE_ENV === '"development"') {
-												params.location = `116.481488,39.990464`//	先写死在北京
-											} else {
-												params.location = `${result.longitude},${result.latitude}`
-											}
+									// uni.getLocation({
+									// 	type: 'gcj02', isHighAccuracy: true
+									// }).then(([err, result]) => {
+									// 	if (err) {
+									// 		uni.showToast({
+									// 			title: "获取地理位置失败",
+									// 			icon: "none"
+									// 		})
+									// 	} else {
+									// 		if (process.env.NODE_ENV === '"development"') {
+									// 			params.location = `116.481488,39.990464`//	先写死在北京
+									// 		} else {
+									// 			params.location = `${result.longitude},${result.latitude}`
+									// 		}
 
+									// 		userLogin(params)
+									// 			.then((success) => {
+									// 				if (success.code === 1) {
+									// 					_this.setToken(success.data.token)
+									// 					// 保存配送费
+									// 					_this.setDeliveryFee(success.data.deliveryFee)
+									// 					// 保存商铺信息
+									// 					_this.setShopInfo({
+									// 						shopName: success.data.shopName,
+									// 						shopAddress: success.data.shopAddress,
+									// 						shopId: success.data.shopId,
+									// 					})
+									// 					_this.init()
+									// 				}
+									// 			})
+									// 			.catch((err) => { })
+
+
+
+									// 	}
+
+									// }
+									// )
 											userLogin(params)
 												.then((success) => {
 													if (success.code === 1) {
@@ -263,12 +290,6 @@ export default {
 													}
 												})
 												.catch((err) => { })
-
-
-
-										}
-
-									})
 
 								},
 								fail: function (err) { },
@@ -439,15 +460,6 @@ export default {
 		},
 		// 获取购物车订单列表
 		async getTableOrderDishListes() {
-			// 调用获取购物车集合接口
-			await getShoppingCartList({})
-				.then((res) => {
-					if (res.code === 1) {
-						this.initdishListMut(res.data)
-						this.computOrderInfo()
-					}
-				})
-				.catch((err) => { })
 		},
 		// 去订单页面
 		goOrder() {

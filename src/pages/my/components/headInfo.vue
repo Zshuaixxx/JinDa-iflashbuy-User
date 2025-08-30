@@ -64,7 +64,7 @@ export default {
 .my_info {
     height: 172rpx;
     width: 750rpx;
-    background-color: #ffc200;
+    background-color: #9C27B0;
     display: flex;
     // 头像
     .head {

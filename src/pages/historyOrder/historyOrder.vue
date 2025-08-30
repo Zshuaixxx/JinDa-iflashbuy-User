@@ -340,7 +340,7 @@ export default {
     width: 32rpx;
     height: 8rpx;
     display: block;
-    background: #ffc200;
+    background: #9C27B0;
     border-radius: 8rpx;
     transform: translate(-50%, -50%);
     position: absolute;

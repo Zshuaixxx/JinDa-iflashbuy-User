@@ -65,7 +65,7 @@
                   <label v-for="item in radioGroup" :key="item">
                     <radio
                       :value="item"
-                      color="#FFC200"
+                      color="#9C27B0"
                       :checked="item == activeRadio"
                     />{{ item }}
                   </label>

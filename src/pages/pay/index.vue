@@ -35,7 +35,7 @@
                   <view class="uni-list-item__extra">
                     <radio
                       :value="item"
-                      color="#FFC200"
+                      color="#9C27B0"
                       :checked="index == activeRadio"
                       class="radioIcon"
                     />

@@ -65,7 +65,7 @@
               <radio
                 class="item_radio"
                 v-if="testValue"
-                color="#FFC200"
+                color="#9C27B0"
                 :value="item.id"
                 :checked="item.isDefault === 1 && isActive === index"
                 @click.stop="getRadio(index, item)"
@@ -351,8 +351,8 @@ export default {
       height: 86rpx;
       line-height: 86rpx;
       border-radius: 8rpx;
-      background: #ffc200;
-      border: 1px solid #ffc200;
+      background: #9C27B0;
+      border: 1px solid #9C27B0;
       opacity: 1;
       font-size: 30rpx;
       font-family: PingFangSC, PingFangSC-Medium;

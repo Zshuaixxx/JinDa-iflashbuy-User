@@ -585,7 +585,7 @@ export default {
       border: 0 none;
     }
     .add_btn {
-      background: #ffc200;
+      background: #9C27B0;
 
       .img_btn {
         width: 44rpx;
