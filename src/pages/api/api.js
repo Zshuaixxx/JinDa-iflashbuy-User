@@ -88,14 +88,23 @@ export const payOrder = (params) =>
 	})
 
 
+// 分页查询商家列表
+ export const getMerchantPage = (params) => {
+ return request({
+ url: '/user/merchant/page',
+ method: 'GET',
+ params
+ })
+ };
+
 // 用户登录
-export const userLogin = (params) => {
-	return request({
-		url: '/user/user/login',
-		method: 'POST',
-		params
-	})
-}
+ export const userLogin = (params) => {
+ return request({
+ url: '/user/user/login',
+ method: 'POST',
+ params
+ })
+ }
 
 // 菜品和套餐的分类
 export const getCategoryList = (params) => {

@@ -1,11 +1,18 @@
 {
   "pages": [{
-      "path": "pages/index/index",
-      "style": {
-        "navigationStyle": "custom",
-        "navigationBarTitleText": "尽达闪购"
-      }
-    },
+    "path": "pages/merchantList/index",
+    "style": {
+      "navigationStyle": "custom",
+      "navigationBarTitleText": "商家列表"
+    }
+  },
+  {
+    "path": "pages/index/index",
+    "style": {
+      "navigationStyle": "custom",
+      "navigationBarTitleText": "尽达闪购"
+    }
+  },
     {
       "path": "pages/order/index",
       "style": {
