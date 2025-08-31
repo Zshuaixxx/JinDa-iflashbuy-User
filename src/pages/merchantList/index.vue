@@ -8,9 +8,10 @@
       <view class="header-content">
         <view class="title-section">
           <text class="page-title">商家列表</text>
-          <view class="location-info">
+          <view class="location-info" @click="handleLocationClick">
             <text class="location-icon">📍</text>
-            <text class="location-text">当前位置</text>
+            <text class="location-text">{{ currentLocationText }}</text>
+            <text v-if="isLocating" class="locating-spinner">⟳</text>
           </view>
         </view>
         <!-- 预留空间避免与关闭按钮冲突 -->
@@ -182,6 +183,13 @@ export default defineComponent({
         latitude: 39.9042,
         longitude: 116.4074,
         loading: false,
+        // 定位相关状态
+        currentLocationText: '正在定位...',
+        isLocating: false,
+        locationPermissionDenied: false,
+        currentAddress: '',
+        currentLatitude: null,
+        currentLongitude: null,
         // 添加滚动相关状态
         scrollTop: 0,
         showScrollIndicator: false,
@@ -192,7 +200,110 @@ export default defineComponent({
     this.store = useMainStore();
     this.checkLoginStatus();
   },
+  mounted() {
+    // 页面加载后自动获取定位
+    this.initLocation();
+    
+    // 监听地址选择事件
+    uni.$on('addressSelected', this.onAddressSelected);
+  },
+  
+  beforeDestroy() {
+    // 移除事件监听
+    uni.$off('addressSelected', this.onAddressSelected);
+  },
+  
+  onShow() {
+    // 从其他页面返回时的处理
+    this.handlePageReturn();
+  },
   methods: {
+    /**
+     * 处理页面返回逻辑
+     */
+    handlePageReturn() {
+      // 获取页面参数
+      const pages = getCurrentPages();
+      const currentPage = pages[pages.length - 1];
+      const options = currentPage.options || {};
+      
+      console.log('页面参数:', options);
+      
+      // 检查是否从地址管理页面返回
+      if (options.fromAddress === 'true') {
+        console.log('检测到从地址管理页面返回');
+        this.handleAddressReturn(options);
+      }
+      
+      // 检查store中的地址数据更新
+      if (this.store.addressData && this.store.addressData.isFromAddressManagement) {
+        console.log('检测到地址数据更新:', this.store.addressData);
+        this.applySelectedAddress(this.store.addressData);
+      }
+    },
+
+    /**
+     * 处理从地址管理页面返回的逻辑
+     */
+    handleAddressReturn(options) {
+      // 从 URL 参数中获取经纬度
+      if (options.latitude && options.longitude) {
+        const latitude = parseFloat(options.latitude);
+        const longitude = parseFloat(options.longitude);
+        
+        if (!isNaN(latitude) && !isNaN(longitude)) {
+          console.log('使用从地址管理页面传递的经纬度:', latitude, longitude);
+          
+          // 更新当前位置信息
+          this.currentLatitude = latitude;
+          this.currentLongitude = longitude;
+          this.latitude = latitude;
+          this.longitude = longitude;
+          
+          // 重新加载商家列表
+          this.currentPage = 1;
+          this.loadMerchantList();
+        }
+      }
+    },
+
+    /**
+     * 应用选中的地址信息
+     */
+    applySelectedAddress(addressData) {
+      console.log('应用选中的地址信息:', addressData);
+      
+      // 更新地址显示
+      if (addressData.fullAddress) {
+        this.currentAddress = addressData.fullAddress;
+        this.currentLocationText = addressData.fullAddress.length > 8 ? 
+          addressData.fullAddress.substring(0, 8) + '...' : addressData.fullAddress;
+      }
+      
+      // 如果有经纬度信息，更新位置
+      if (addressData.location) {
+        const [lat, lng] = addressData.location.split(',');
+        const latitude = parseFloat(lat);
+        const longitude = parseFloat(lng);
+        
+        if (!isNaN(latitude) && !isNaN(longitude)) {
+          this.currentLatitude = latitude;
+          this.currentLongitude = longitude;
+          this.latitude = latitude;
+          this.longitude = longitude;
+          
+          // 重新加载商家列表
+          this.currentPage = 1;
+          this.loadMerchantList();
+        }
+      }
+      
+      // 清除标记，防止重复处理
+      this.store.setAddress({
+        ...addressData,
+        isFromAddressManagement: false
+      });
+    },
     /**
      * 检查登录状态
      */
@@ -247,8 +358,9 @@ export default defineComponent({
         const loginParams = {
           code: jsCode,
           userInfo: userProfile.userInfo,
-          // 保留原逻辑中的位置参数格式，即使暂时使用固定值
-          location: process.env.NODE_ENV === 'development' ? '116.481488,39.990464' : ''
+          // 保留原逻辑中的位置参数格式，使用当前定位或默认值
+          location: this.currentLatitude && this.currentLongitude ? 
+            `${this.currentLongitude},${this.currentLatitude}` : '116.481488,39.990464'
         };
 
         console.log('登录参数:', loginParams);
@@ -588,7 +700,356 @@ export default defineComponent({
           icon: 'none',
           duration: 1500
         });
+      },
+
+      /**
+       * 初始化定位
+       */
+      async initLocation() {
+        console.log('开始初始化定位功能');
+        this.isLocating = true;
+        this.currentLocationText = '正在定位...';
+        
+        try {
+          await this.getCurrentLocation();
+        } catch (error) {
+          console.error('初始化定位失败:', error);
+          this.handleLocationError(error);
+        } finally {
+          this.isLocating = false;
+        }
+      },
+
+      /**
+       * 获取当前位置
+       */
+      getCurrentLocation() {
+        return new Promise((resolve, reject) => {
+          console.log('开始获取设备定位');
+          
+          uni.getLocation({
+            type: 'gcj02', // 使用国测局坐标系
+            success: async (res) => {
+              console.log('定位成功:', res);
+              this.currentLatitude = res.latitude;
+              this.currentLongitude = res.longitude;
+              
+              // 更新商家列表查询的经纬度
+              this.latitude = res.latitude;
+              this.longitude = res.longitude;
+              
+              try {
+                // 逆地理编码获取地址信息
+                await this.reverseGeocode(res.latitude, res.longitude);
+                resolve(res);
+              } catch (geocodeError) {
+                console.error('逆地理编码失败:', geocodeError);
+                this.currentLocationText = '定位成功';
+                this.currentAddress = '位置获取成功';
+                resolve(res);
+              }
+              
+              // 重新加载商家列表（使用新的位置信息）
+              this.currentPage = 1;
+              this.loadMerchantList();
+            },
+            fail: (error) => {
+              console.error('定位失败:', error);
+              reject(error);
+            }
+          });
+        });
+      },
+
+      /**
+       * 逆地理编码 - 将经纬度转换为地址信息
+       * 注意：这里需要调用服务端接口进行逆地理编码
+       * 目前暂时使用模拟数据，后续需要集成QQmapUtil的逆地理编码功能
+       */
+      async reverseGeocode(latitude, longitude) {
+        try {
+          console.log('开始逆地理编码:', latitude, longitude);
+          
+          // TODO: 这里应该调用服务端的逆地理编码接口
+          // 类似于现有的QQmapUtil.getLocation()方法，但是反向操作
+          // 暂时使用模拟数据
+          
+          const mockAddress = {
+            province: '北京市',
+            city: '北京市', 
+            district: '朝阳区',
+            street: '建国门外大街'
+          };
+          
+          this.currentAddress = `${mockAddress.district}${mockAddress.street}`;
+          this.currentLocationText = this.currentAddress.length > 8 ? 
+            this.currentAddress.substring(0, 8) + '...' : this.currentAddress;
+          
+          console.log('逆地理编码完成:', this.currentAddress);
+          
+        } catch (error) {
+          console.error('逆地理编码异常:', error);
+          throw error;
+        }
+      },
+
+      /**
+       * 处理定位错误
+       */
+      handleLocationError(error) {
+        console.error('定位错误处理:', error);
+        
+        if (error.errMsg && error.errMsg.includes('auth')) {
+          // 权限被拒绝
+          this.locationPermissionDenied = true;
+          this.currentLocationText = '定位权限已关闭';
+          
+          uni.showModal({
+            title: '定位权限',
+            content: '需要获取您的位置信息以显示附近商家，请在设置中开启定位权限',
+            confirmText: '去设置',
+            cancelText: '暂不开启',
+            success: (res) => {
+              if (res.confirm) {
+                uni.openSetting({
+                  success: (settingRes) => {
+                    if (settingRes.authSetting['scope.userLocation']) {
+                      // 用户开启了定位权限，重新获取定位
+                      this.initLocation();
+                    }
+                  }
+                });
+              } else {
+                // 用户取消，使用默认位置
+                this.useDefaultLocation();
+              }
+            }
+          });
+        } else {
+          // 其他定位错误
+          this.currentLocationText = '定位失败';
+          uni.showToast({
+            title: '定位失败，将使用默认位置',
+            icon: 'none',
+            duration: 2000
+          });
+          this.useDefaultLocation();
+        }
+      },
+
+      /**
+       * 使用默认位置
+       */
+      useDefaultLocation() {
+        console.log('使用默认位置');
+        this.currentLocationText = '默认位置';
+        this.currentAddress = '北京市朝阳区';
+        this.latitude = 39.9042;
+        this.longitude = 116.4074;
+        
+        // 使用默认位置加载商家列表
+        this.currentPage = 1;
+        this.loadMerchantList();
+      },
+
+      /**
+       * 处理定位按钮点击事件
+       */
+      handleLocationClick() {
+        console.log('定位按钮被点击');
+        
+        uni.showActionSheet({
+          itemList: ['重新定位', '选择地址', '地址管理'],
+          success: (res) => {
+            switch(res.tapIndex) {
+              case 0:
+                // 重新定位
+                this.initLocation();
+                break;
+              case 1:
+                // 选择地址（打开地图选点）
+                this.openMapSelector();
+                break;
+              case 2:
+                // 地址管理
+                this.goToAddressManagement();
+                break;
+            }
+          },
+          fail: (error) => {
+            console.log('用户取消操作');
+          }
+        });
+      },
+
+      /**
+       * 打开地图选点
+       */
+      openMapSelector() {
+        console.log('打开地图选点功能');
+        
+        // 首先检查定位权限
+        uni.getSetting({
+          success: (settingRes) => {
+            if (settingRes.authSetting['scope.userLocation'] === false) {
+              // 用户曾经拒绝授权，引导用户开启
+              uni.showModal({
+                title: '定位权限',
+                content: '需要获取您的位置信息以使用地图选点功能，请在设置中开启定位权限',
+                confirmText: '去设置',
+                cancelText: '取消',
+                success: (modalRes) => {
+                  if (modalRes.confirm) {
+                    uni.openSetting({
+                      success: (openRes) => {
+                        if (openRes.authSetting['scope.userLocation']) {
+                          // 用户开启了权限，重新调用地图选点
+                          this.performChooseLocation();
+                        }
+                      }
+                    });
+                  }
+                }
+              });
+              return;
+            }
+            
+            // 有权限或未设置，直接调用
+            this.performChooseLocation();
+          },
+          fail: () => {
+            // 获取设置失败，尝试直接调用
+            this.performChooseLocation();
+          }
+        });
+      },
+
+      /**
+       * 执行地图选点操作
+       */
+      performChooseLocation() {
+        uni.chooseLocation({
+          latitude: this.currentLatitude || this.latitude,
+          longitude: this.currentLongitude || this.longitude,
+          success: (res) => {
+            console.log('地图选点成功:', res);
+            
+            // 更新位置信息
+            this.currentLatitude = res.latitude;
+            this.currentLongitude = res.longitude;
+            this.latitude = res.latitude;
+            this.longitude = res.longitude;
+            
+            // 更新地址显示
+            this.currentAddress = res.address || res.name || '已选择位置';
+            this.currentLocationText = this.currentAddress.length > 8 ? 
+              this.currentAddress.substring(0, 8) + '...' : this.currentAddress;
+            
+            // 重新加载商家列表
+            this.currentPage = 1;
+            this.loadMerchantList();
+            
+            uni.showToast({
+              title: '位置已更新',
+              icon: 'success',
+              duration: 1500
+            });
+          },
+          fail: (error) => {
+            console.error('地图选点失败:', error);
+            
+            // 根据不同错误类型给出不同的提示
+            let errorMessage = '选择位置失败';
+            
+            if (error.errMsg) {
+              if (error.errMsg.includes('auth')) {
+                errorMessage = '没有定位权限，请在设置中开启';
+              } else if (error.errMsg.includes('cancel')) {
+                errorMessage = '用户取消选择';
+              } else if (error.errMsg.includes('requiredPrivateInfos')) {
+                errorMessage = '小程序配置不完整，请联系开发者';
+              } else if (error.errMsg.includes('fail')) {
+                errorMessage = '地图服务不可用，请稍后重试';
+              }
+            }
+            
+            // 只在非取消操作时显示错误提示
+            if (!error.errMsg || !error.errMsg.includes('cancel')) {
+              uni.showToast({
+                title: errorMessage,
+                icon: 'none',
+                duration: 2000
+              });
+            }
+          }
+        });
+      },
+
+    /**
+     * 处理地址选择事件
+     */
+    onAddressSelected(eventData) {
+      console.log('接收到地址选择事件:', eventData);
+      
+      // 更新地址显示
+      if (eventData.fullAddress) {
+        this.currentAddress = eventData.fullAddress;
+        this.currentLocationText = eventData.fullAddress.length > 8 ? 
+          eventData.fullAddress.substring(0, 8) + '...' : eventData.fullAddress;
       }
+      
+      // 如果有位置参数，解析并更新位置
+      if (eventData.locationParams) {
+        const urlParams = new URLSearchParams(eventData.locationParams.substring(1));
+        const latitude = urlParams.get('latitude');
+        const longitude = urlParams.get('longitude');
+        
+        if (latitude && longitude) {
+          this.currentLatitude = parseFloat(latitude);
+          this.currentLongitude = parseFloat(longitude);
+          this.latitude = parseFloat(latitude);
+          this.longitude = parseFloat(longitude);
+        }
+      } else if (eventData.location) {
+        // 直接从地址数据中获取经纬度
+        const [lat, lng] = eventData.location.split(',');
+        if (lat && lng) {
+          this.currentLatitude = parseFloat(lat);
+          this.currentLongitude = parseFloat(lng);
+          this.latitude = parseFloat(lat);
+          this.longitude = parseFloat(lng);
+        }
+      }
+      
+      // 重新加载商家列表
+      this.currentPage = 1;
+      this.loadMerchantList();
+    },
+
+    /**
+     * 跳转到地址管理页面
+     */
+    goToAddressManagement() {
+      console.log('跳转到地址管理页面');
+      
+      // 设置返回路径为当前页面
+      this.store.setAddressBackUrl('/pages/merchantList/index');
+      
+      uni.navigateTo({
+        url: '/pages/address/address',
+        success: () => {
+          console.log('成功跳转到地址管理页面');
+        },
+        fail: (error) => {
+          console.error('跳转地址管理页面失败:', error);
+          uni.showToast({
+            title: '跳转失败',
+            icon: 'none',
+            duration: 1500
+          });
+        }
+      });
+    }
   }
 });
 </script>
@@ -638,6 +1099,16 @@ export default defineComponent({
   display: flex;
   align-items: center;
   gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.location-info:active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0.95);
 }
 
 .location-icon {
@@ -648,6 +1119,23 @@ export default defineComponent({
 .location-text {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.8);
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 定位加载动画 */
+.locating-spinner {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  animation: spin 1s linear infinite;
+  margin-left: 4px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* 预留空间避免与关闭按钮冲突 */
